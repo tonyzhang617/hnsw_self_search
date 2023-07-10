@@ -15,13 +15,13 @@ namespace {
 using idx_t = hnswlib::labeltype;
 
 void test() {
-    int d = 4;
-    idx_t n = 100;
-    idx_t nq = 10;
+    int d = 128;
+    idx_t n = 1000;
+    // idx_t nq = 100;
     size_t k = 10;
 
     std::vector<float> data(n * d);
-    std::vector<float> query(nq * d);
+    // std::vector<float> query(nq * d);
 
     std::mt19937 rng;
     rng.seed(47);
@@ -30,9 +30,9 @@ void test() {
     for (idx_t i = 0; i < n * d; ++i) {
         data[i] = distrib(rng);
     }
-    for (idx_t i = 0; i < nq * d; ++i) {
-        query[i] = distrib(rng);
-    }
+    // for (idx_t i = 0; i < nq * d; ++i) {
+    //     query[i] = distrib(rng);
+    // }
 
     hnswlib::L2Space space(d);
     hnswlib::AlgorithmInterface<float>* alg_brute  = new hnswlib::BruteforceSearch<float>(&space, 2 * n);
@@ -44,10 +44,10 @@ void test() {
     }
 
     // test searchKnnCloserFirst of BruteforceSearch
-    for (size_t j = 0; j < nq; ++j) {
-        const void* p = query.data() + j * d;
-        auto gd = alg_brute->searchKnn(p, k);
-        auto res = alg_brute->searchKnnCloserFirst(p, k);
+    for (size_t j = 0; j < n; ++j) {
+        const void* p = data.data() + j * d;
+        auto gd = alg_brute->searchKnn(p, j, k);
+        auto res = alg_brute->searchKnnCloserFirst(p, j, k);
         assert(gd.size() == res.size());
         size_t t = gd.size();
         while (!gd.empty()) {
@@ -55,10 +55,14 @@ void test() {
             gd.pop();
         }
     }
-    for (size_t j = 0; j < nq; ++j) {
-        const void* p = query.data() + j * d;
-        auto gd = alg_hnsw->searchKnn(p, k);
-        auto res = alg_hnsw->searchKnnCloserFirst(p, k);
+    for (size_t j = 0; j < n; ++j) {
+        const void* p = data.data() + j * d;
+        auto gd = alg_hnsw->searchKnn(p, j, k);
+        auto res = alg_hnsw->searchKnnCloserFirst(p, j, k);
+        for (size_t l = 0; l < k; ++l) {
+            std::cout << (l == 0 ? "" : ", ") << res[l].second << ':' << res[l].first;
+        }
+        std::cout << std::endl;
         assert(gd.size() == res.size());
         size_t t = gd.size();
         while (!gd.empty()) {

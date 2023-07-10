@@ -1097,7 +1097,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         }
 
         std::unique_lock <std::mutex> lock_el(link_list_locks_[cur_c]);
-        int curlevel = getRandomLevel(mult_);
+        // int curlevel = getRandomLevel(mult_);
+        int curlevel = 0;
         if (level > 0)
             curlevel = level;
 
@@ -1181,12 +1182,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
 
     std::priority_queue<std::pair<dist_t, labeltype >>
-    searchKnn(const void *query_data, size_t k, BaseFilterFunctor* isIdAllowed = nullptr) const {
+    searchKnn(const void *query_data, unsigned int enterpoint, size_t k, BaseFilterFunctor* isIdAllowed = nullptr) const {
         std::priority_queue<std::pair<dist_t, labeltype >> result;
         if (cur_element_count == 0) return result;
 
-        tableint currObj = enterpoint_node_;
-        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        tableint currObj = enterpoint;
+        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(currObj), dist_func_param_);
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;

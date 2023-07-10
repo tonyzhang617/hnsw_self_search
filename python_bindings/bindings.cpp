@@ -599,10 +599,12 @@ class Index {
 
     py::object knnQuery_return_numpy(
         py::object input,
+        py::object ids,
         size_t k = 1,
         int num_threads = -1,
         const std::function<bool(hnswlib::labeltype)>& filter = nullptr) {
         py::array_t < dist_t, py::array::c_style | py::array::forcecast > items(input);
+        py::array_t < int64_t, py::array::c_style | py::array::forcecast > ids_(ids);
         auto buffer = items.request();
         hnswlib::labeltype* data_numpy_l;
         dist_t* data_numpy_d;
@@ -630,7 +632,7 @@ class Index {
             if (normalize == false) {
                 ParallelFor(0, rows, num_threads, [&](size_t row, size_t threadId) {
                     std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result = appr_alg->searchKnn(
-                        (void*)items.data(row), k, p_idFilter);
+                        (void*)items.data(row), ids_.data()[row], k, p_idFilter);
                     if (result.size() != k)
                         throw std::runtime_error(
                             "Cannot return the results in a contigious 2D array. Probably ef or M is too small");
@@ -650,7 +652,7 @@ class Index {
                     normalize_vector((float*)items.data(row), (norm_array.data() + start_idx));
 
                     std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result = appr_alg->searchKnn(
-                        (void*)(norm_array.data() + start_idx), k, p_idFilter);
+                        (void*)(norm_array.data() + start_idx), ids_.data()[row], k, p_idFilter);
                     if (result.size() != k)
                         throw std::runtime_error(
                             "Cannot return the results in a contigious 2D array. Probably ef or M is too small");
@@ -839,7 +841,7 @@ class BFIndex {
 
             for (size_t row = 0; row < rows; row++) {
                 std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result = alg->searchKnn(
-                        (void *) items.data(row), k, p_idFilter);
+                        (void *) items.data(row), 0, k, p_idFilter);
                 for (int i = k - 1; i >= 0; i--) {
                     auto &result_tuple = result.top();
                     data_numpy_d[row * k + i] = result_tuple.first;
@@ -891,6 +893,7 @@ PYBIND11_PLUGIN(hnswlib) {
         .def("knn_query",
             &Index<float>::knnQuery_return_numpy,
             py::arg("data"),
+            py::arg("ids"),
             py::arg("k") = 1,
             py::arg("num_threads") = -1,
             py::arg("filter") = py::none())

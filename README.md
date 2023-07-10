@@ -1,5 +1,38 @@
-# Hnswlib - fast approximate nearest neighbor search
-Header-only C++ HNSW implementation with python bindings, insertions and updates.
+# Hnswlib (Adapted for self-similarity search) - fast approximate nearest neighbor search
+Header-only C++ HNSW implementation with python bindings, insertions and updates. This implementation is adapted for self-similarity search, i.e. the indexed vectors are identical to the query vectors.
+
+**Example usage**
+```python
+import hnswlib
+import numpy as np
+
+dim = 128
+num_elements = 10000
+topk = 10
+
+# Generating sample data
+data = np.float32(np.random.random((num_elements, dim)))
+ids = np.arange(num_elements)
+
+# Declaring index and set number of threads
+p = hnswlib.Index(space = 'l2', dim = dim) # possible options are l2, cosine or ip
+p.set_num_threads(32)
+
+# Initializing index - the maximum number of elements should be known beforehand
+p.init_index(max_elements = num_elements, ef_construction = 200, M = 16)
+
+# Element insertion (can be called several times):
+p.add_items(data, ids)
+
+# Controlling the recall by setting ef:
+p.set_ef(100) # ef should always be > k
+
+# Query dataset, k - number of the closest elements (returns 2 numpy arrays)
+labels, distances = p.knn_query(data, ids, k = topk)
+
+print(labels)
+print(distances)
+```
 
 **NEWS:**
 
